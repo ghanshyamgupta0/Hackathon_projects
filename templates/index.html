@@ -1,0 +1,316 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GovDocs Helper</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600&family=Poppins:wght@500;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css') }}">
+    <style>
+        /* Small overrides and fallback styles kept inline for simplicity */
+        :root{--accent:#0b63d6;--muted:#6c757d;--card:#ffffff}
+        body { background-color: #f8f9fa; font-family: 'Inter', 'Segoe UI', sans-serif; color:#0f172a; }
+        header { animation: fadeInDown 450ms ease both; }
+    </style>
+</head>
+<body>
+
+<header>
+    <div class="brand-row container">
+        <div class="brand-logo" aria-hidden="true">
+            <!-- friendly government-style shield logo (inline SVG) -->
+            <!-- <svg viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg" role="img"> -->
+                <defs>
+                  <linearGradient id="g" x1="0" x2="1">
+                    <stop offset="0" stop-color="#1f6feb" />
+                    <stop offset="1" stop-color="#0b63d6" />
+                  </linearGradient>
+                </defs>
+                <rect x="6" y="8" width="52" height="40" rx="6" fill="url(#g)" opacity="0.12"></rect>
+                <path d="M32 8c6 6 14 4 20 14v6c0 8-8 14-20 18C18 44 10 38 10 30v-6C16 12 26 10 32 8z" fill="#0b63d6"/>
+                <circle cx="32" cy="24" r="6" fill="#fff" opacity="0.98"/>
+            </svg>
+        </div>
+        <div>
+            <h1 class="brand-title">GovDocs Helper</h1>
+            <p class="brand-sub">Your friendly guide to government document submissions</p>
+        </div>
+    </div>
+</header>
+
+<div class="container my-5">
+    <div class="row justify-content-center">
+        <div class="col-lg-8 col-md-10">
+            <!-- Hero + Form -->
+            <div class="hero card">
+              <div class="hero-left">
+                <h2 class="hero-title">Find what you need to apply</h2>
+                <p class="hero-sub">Type a service below — e.g., Passport, National Identity Card, Driving License — and get a clear checklist, steps, offices, and estimated processing time.</p>
+
+                <form id="search-form" method="POST" action="#" class="search-box">
+                  <input id="documentType" name="document_type" class="search-input" type="text" placeholder="e.g., Passport, Driving License" aria-label="Service name" required>
+                  <button type="submit" class="search-btn">Search</button>
+                </form>
+
+                <div class="chips" aria-hidden="false">
+                  <div class="chip" data-value="Passport">Passport</div>
+                  <div class="chip" data-value="National Identity Card">National ID</div>
+                  <div class="chip" data-value="Driving License">Driving License</div>
+                  <div class="chip" data-value="Vehicle Registration">Vehicle Reg.</div>
+                </div>
+              </div>
+              <div class="hero-right" style="flex:0 0 220px;display:flex;align-items:center;justify-content:center">
+                <img src="{{ url_for('static', filename='img/hero-illustration.svg') }}" alt="illustration" style="max-width:160px;opacity:0.95">
+              </div>
+            </div>
+
+            <div id="loader" style="display:none;margin-bottom:12px">
+              <div class="card">
+              <div class="skeleton" style="height:14px;width:60%;margin-bottom:8px"></div>
+              <div class="skeleton" style="height:12px;width:90%;margin-bottom:6px"></div>
+              <div class="skeleton" style="height:12px;width:80%"></div>
+              </div>
+            </div>
+
+            <!-- Result Section (populated by backend/Gemini) -->
+            <div class="result-section" id="result-section">
+              <div class="card result-panel">
+                <div class="result-top">
+                  <div class="meta-row">
+                    <div class="badge-key" id="result-badge">Info</div>
+                    <div style="flex:1">
+                      <h3 class="mt-0" id="result-heading">Required Documents</h3>
+                      <div class="small-muted" id="result-sub">Documents, steps and where to go will appear here.</div>
+                    </div>
+                  </div>
+                </div>
+
+                <div class="result-grid">
+                  <div>
+                    <div class="card highlight">
+                      <div class="small-muted">Required Documents</div>
+                      <div id="documents-pills" style="margin-top:8px"></div>
+                    </div>
+
+                    <div class="card" style="margin-top:12px">
+                      <div class="small-muted">Application Steps</div>
+                      <div id="steps-column" style="margin-top:10px"></div>
+                    </div>
+                  </div>
+
+                  <div>
+                    <div class="card">
+                      <table class="table-like">
+                        <tr>
+                          <td class="key-col">Processing time</td>
+                          <td class="value-col processing" id="processing-time">—</td>
+                        </tr>
+                        <tr>
+                          <td class="key-col">Best time to visit</td>
+                          <td class="value-col" id="best-time">—</td>
+                        </tr>
+                            <tr>
+                              <td class="key-col">Offices</td>
+                              <td class="value-col" id="offices-table">—</td>
+                            </tr>
+                        <tr>
+                          <td class="key-col">Official links</td>
+                          <td class="value-col" id="refs-table">—</td>
+                        </tr>
+                      </table>
+                    </div>
+
+                    <div class="card" style="margin-top:12px">
+                      <div class="small-muted">Quick Highlights</div>
+                      <ul id="highlights-list" style="margin-top:8px"></ul>
+                    </div>
+                  </div>
+                </div>
+
+                <div style="margin-top:10px">
+                  <div class="small-muted">Model debug (hidden by default)</div>
+                  <div id="debug-box" class="debug-box" style="display:none">raw model output</div>
+                </div>
+              </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Map modal/panel -->
+<div class="container">
+  <div class="row justify-content-center">
+    <div class="col-lg-8 col-md-10">
+      <div class="card map-card" id="map-card" style="display:none;margin-top:14px">
+        <iframe id="map-iframe" class="map-iframe" src="" loading="lazy" referrerpolicy="no-referrer-when-downgrade"></iframe>
+      </div>
+    </div>
+  </div>
+</div>
+
+<footer class="footer">
+    <p>&copy; 2025 GovDocs Helper | <a href="#">Official Gov Portal</a></p>
+    </footer>
+
+<!-- Frontend -> backend: call /api/service-info to get structured data from Gemini -->
+<script>
+  (function(){
+    const form = document.getElementById('search-form');
+    const resultSection = document.getElementById('result-section');
+    const heading = document.getElementById('result-heading');
+    const docsPills = document.getElementById('documents-pills');
+    const officesTable = document.getElementById('offices-table');
+    const refsTable = document.getElementById('refs-table');
+    const stepsColumn = document.getElementById('steps-column');
+    const processingTimeEl = document.getElementById('processing-time');
+    const bestTimeEl = document.getElementById('best-time');
+    const highlightsList = document.getElementById('highlights-list');
+    const debugBox = document.getElementById('debug-box');
+    const submitBtn = form.querySelector('button[type="submit"]');
+    const loader = document.getElementById('loader');
+
+    function setLoading(isLoading){
+      if(isLoading){
+        submitBtn.disabled = true; submitBtn.textContent = 'Searching…';
+        loader.style.display = 'block';
+        resultSection.style.opacity = 0.6;
+      } else {
+        submitBtn.disabled = false; submitBtn.textContent = 'Search';
+        loader.style.display = 'none';
+        resultSection.style.opacity = 1;
+      }
+    }
+
+    function clearLists(){
+      docsPills.innerHTML = '';
+      officesTable.innerHTML = '';
+      refsTable.innerHTML = '';
+      stepsColumn.innerHTML = '';
+      highlightsList.innerHTML = '';
+      processingTimeEl.textContent = '—';
+      bestTimeEl.textContent = '—';
+      debugBox.style.display = 'none';
+      debugBox.textContent = '';
+    }
+
+    async function fetchService(service){
+      setLoading(true);
+      try{
+        const res = await fetch('/api/service-info', {
+          method: 'POST',
+          headers: {'Content-Type':'application/json'},
+          body: JSON.stringify({service})
+        });
+        const data = await res.json();
+        if(!res.ok){
+          console.error('API error', data);
+          alert((data && data.error) ? data.error : 'Service unavailable');
+          return null;
+        }
+        return data;
+      }catch(err){
+        console.error(err);
+        alert('Network error — please try again');
+        return null;
+      }finally{ setLoading(false); }
+    }
+
+    function renderData(service, data){
+      heading.textContent = data.title || `Required Documents for ${service}`;
+      clearLists();
+
+      // Documents: render as pills
+      (data.documents || []).forEach(d => {
+        const span = document.createElement('span'); span.className = 'doc-pill'; span.textContent = d; docsPills.appendChild(span);
+      });
+
+      // Offices: render compact list
+      if(Array.isArray(data.offices) && data.offices.length){
+        officesTable.innerHTML = '';
+        data.offices.forEach(o => {
+          const div = document.createElement('div');
+          div.className = 'office-item';
+          // store address for map
+          const addr = o.address || '';
+          div.setAttribute('data-address', addr);
+          if(o.url) div.innerHTML = `<a href="${o.url}" target="_blank" rel="noopener">${o.name}</a><div class='small-muted'>${addr}</div>`;
+          else div.innerHTML = `<strong>${o.name}</strong><div class='small-muted'>${addr}</div>`;
+          // clicking an office will center the embedded map on its address
+          div.addEventListener('click', ()=>{
+            const a = div.getAttribute('data-address') || o.name;
+            const iframe = document.getElementById('map-iframe');
+            const mapCard = document.getElementById('map-card');
+            const q = encodeURIComponent(a + ' ' + (o.name || ''));
+            iframe.src = `https://www.google.com/maps?q=${q}&output=embed`;
+            mapCard.style.display = 'block';
+            iframe.scrollIntoView({behavior:'smooth', block:'center'});
+          });
+          officesTable.appendChild(div);
+        });
+      }
+
+      // References
+      if(Array.isArray(data.references) && data.references.length){
+        refsTable.innerHTML = '';
+        data.references.forEach(r => {
+          const a = document.createElement('a'); a.href = r.url; a.target='_blank'; a.rel='noopener'; a.textContent = r.title || r.url; a.style.display='block'; refsTable.appendChild(a);
+        });
+      }
+
+      // Steps: show numbered items with highlight for first/important steps
+      (data.steps || []).forEach((s,i) => {
+        const div = document.createElement('div'); div.className='step-item';
+        div.innerHTML = `<strong>${i+1}.</strong> <span>${s}</span>`;
+        if(i===0) div.style.background='linear-gradient(90deg, rgba(11,99,214,0.06), rgba(255,255,255,0))';
+        stepsColumn.appendChild(div);
+      });
+
+      processingTimeEl.textContent = data.processing_time || data.processing || '—';
+      bestTimeEl.textContent = data.best_time || data.bestTime || data.best || '—';
+
+      // Highlights: make a few short points
+      const highlights = [];
+      if(data.processing_time) highlights.push(`Processing: ${data.processing_time}`);
+      if(data.best_time) highlights.push(`Best time: ${data.best_time}`);
+      if(data.offices && data.offices.length) highlights.push(`${data.offices.length} office(s) nearby`);
+      highlights.slice(0,4).forEach(h=>{ const li=document.createElement('li'); li.textContent=h; highlightsList.appendChild(li); });
+
+      // If the backend returned raw model output (for debugging), show it collapsed
+      if(data.raw){ debugBox.style.display='block'; debugBox.textContent = typeof data.raw === 'string' ? data.raw : JSON.stringify(data.raw, null, 2); }
+
+      // reveal with animation
+      resultSection.classList.remove('reveal');
+      resultSection.style.display = 'block';
+      window.requestAnimationFrame(()=> resultSection.classList.add('reveal'));
+      setTimeout(()=> resultSection.scrollIntoView({behavior:'smooth', block:'start'}), 120);
+    }
+
+    form.addEventListener('submit', async function(e){
+      e.preventDefault();
+      const input = document.getElementById('documentType');
+      const val = input.value && input.value.trim();
+      if(!val) return;
+
+      // fetch structured info from backend (which will call Gemini)
+      const data = await fetchService(val);
+      if(data) renderData(val, data);
+    });
+
+    // chip behaviour: click to populate input and submit
+    document.querySelectorAll('.chip').forEach(c=>{
+      c.addEventListener('click', ()=>{
+        const v = c.getAttribute('data-value');
+        document.getElementById('documentType').value = v;
+        // auto-submit
+        form.dispatchEvent(new Event('submit', {cancelable:true}));
+      });
+    });
+  })();
+</script>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>
